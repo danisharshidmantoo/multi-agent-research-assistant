@@ -5,3 +5,9 @@ pydantic-settings>=2.3.0
 google-genai>=1.30.0
 groq>=0.18.0
 
+langchain
+langchain-community
+langchain-text-splitters
+chromadb
+sentence-transformers
+pypdf

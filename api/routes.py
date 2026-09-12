@@ -9,7 +9,7 @@ from services.exceptions import AgentExecutionError, ConfigurationError, GeminiS
 
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter() 
 
 
 @router.get("/health", response_model=HealthResponse, tags=["system"])

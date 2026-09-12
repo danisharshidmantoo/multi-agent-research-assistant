@@ -1,59 +1,85 @@
-# Multi-Agent Research Assistant
+# 🤖 Multi-Agent Research Assistant
 
-Production-style multi-agent research backend built with Python and FastAPI, powered by Gemini with Groq fallback, and packaged for Docker deployment.
+> A production-style AI research backend combining **multi-agent orchestration, RAG, tool calling, and LLM provider abstraction**.
 
-## Project Overview
+Built with **Python, FastAPI, Gemini, Groq, ChromaDB, and Docker**.
 
-This project implements a coordinated multi-agent pipeline where each agent has a focused responsibility:
+---
 
-- `Research Agent` gathers detailed topic intelligence.
-- `Analysis Agent` extracts insights, trends, risks, and takeaways.
-- `Summary Agent` produces a concise executive report.
-- `Orchestrator Agent` coordinates the end-to-end workflow.
-
-The API is exposed through FastAPI and supports provider failover between Gemini and Groq.
-
-## Architecture Diagram
+## 🧠 How It Works
 
 ```mermaid
 flowchart TD
-    U[User Query] --> API[FastAPI /research]
-    API --> O[OrchestratorAgent]
-    O --> R[ResearchAgent]
-    O --> A[AnalysisAgent]
-    O --> S[SummaryAgent]
-    R --> LLM[LLMService]
-    A --> LLM
-    S --> LLM
-    LLM --> G[GeminiService]
-    LLM --> Q[GroqService]
-    G --> GAPI[Gemini API]
-    Q --> QAPI[Groq API]
-```
+    U[User Topic] --> API[FastAPI /research]
+    API --> O[Orchestrator]
 
-## Agent Descriptions
+    O --> R[Research Agent]
+    R --> LLM[LLM Service]
+    R -. Optional Tool Call .-> RAG[Research Paper RAG]
 
-- `ResearchAgent` (`agents/research_agent.py`): Generates comprehensive domain research notes from a user topic.
-- `AnalysisAgent` (`agents/analysis_agent.py`): Converts research notes into structured insight and trend analysis.
-- `SummaryAgent` (`agents/summary_agent.py`): Produces an executive-grade summary with recommendations.
-- `OrchestratorAgent` (`agents/orchestrator_agent.py`): Runs the pipeline (`research -> analysis -> summary`) and returns unified outputs.
+    RAG --> E[Embeddings]
+    E --> C[ChromaDB]
 
-## API Endpoints
+    LLM --> G[Gemini]
+    LLM --> Q[Groq Fallback]
 
-- `GET /health` - Service liveness check.
-- `POST /research` - Executes full multi-agent workflow.
+    R --> RN[Research Notes]
+    RN --> A[Analysis Agent]
+    A --> AR[Analysis Report]
+    AR --> S[Summary Agent]
+    S --> SR[Summary Report]
 
-### Example Request
+    SR --> O
+    O --> API
+    API --> U
 
-```json
+    Agent Pipeline
+
+Research → Analysis → Summary
+
+Agent	Responsibility
+🔎 Research Agent	Generates detailed research and can optionally retrieve relevant research papers through RAG
+📊 Analysis Agent	Extracts insights, trends, risks, and actionable takeaways
+📝 Summary Agent	Produces an executive summary and recommendations
+🎯 Orchestrator Agent	Coordinates the complete workflow and combines the outputs
+
+RAG is available only to the Research Agent. Analysis and Summary operate on the outputs produced by the preceding stages.
+
+⚙️ Key Engineering Highlights
+Multi-Agent Architecture — Specialized agents coordinated through a centralized Orchestrator.
+RAG + Tool Calling — Research Agent can dynamically invoke a research-paper retrieval tool when indexed knowledge is useful.
+Semantic Retrieval — Documents are chunked, embedded with all-MiniLM-L6-v2, and stored in ChromaDB.
+LLM Abstraction — Agent logic is decoupled from individual model providers through a unified LLMService.
+Provider Fallback — Gemini and Groq provide interchangeable backends with automatic fallback handling.
+Production-Oriented Backend — FastAPI API layer, configuration management, error handling, timeouts, logging, and Docker support.
+🔍 RAG Pipeline
+Research Papers
+      ↓
+Document Loading
+      ↓
+Chunking
+      ↓
+Embeddings
+      ↓
+ChromaDB
+      ↓
+Semantic Retrieval
+      ↓
+Research Agent
+
+The LLM decides whether to use the research-paper retrieval tool based on the research task.
+
+🚀 API
+POST /research
+
+Request
+
 {
   "topic": "Future of AI in healthcare"
 }
-```
 
-### Example Response
+Response
 
-```json
 {
   "topic": "Future of AI in healthcare",
   "result": {
@@ -62,68 +88,64 @@ flowchart TD
     "summary_report": "..."
   }
 }
-```
+GET /health
 
-## Installation Instructions
+Service health check.
 
-```bash
+🛠️ Tech Stack
+
+Python · FastAPI · Gemini · Groq · RAG · ChromaDB · Sentence Transformers · LangChain · Docker
+
+📁 Project Structure
+multi-agent-research-assistant/
+├── agents/
+│   ├── orchestrator_agent.py
+│   ├── research_agent.py
+│   ├── analysis_agent.py
+│   └── summary_agent.py
+├── api/
+│   └── routes.py
+├── models/
+├── rag/
+│   ├── document_loader.py
+│   ├── chunker.py
+│   ├── embeddings.py
+│   ├── vector_store.py
+│   ├── retriever.py
+│   ├── research_paper_tool.py
+│   └── pipeline.py
+├── services/
+│   ├── llm_service.py
+│   ├── gemini_service.py
+│   ├── groq_service.py
+│   └── config.py
+├── Dockerfile
+├── main.py
+├── requirements.txt
+└── .env.example
+⚡ Getting Started
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
 cp .env.example .env
 uvicorn main:app --reload
-```
 
-Open Swagger UI at `http://127.0.0.1:8000/docs`.
+API documentation:
 
-## Environment Variables
+http://127.0.0.1:8000/docs
 
-Configure values in `.env`:
+Environment
+LLM_PRIMARY_PROVIDER=gemini
 
-- `LLM_PRIMARY_PROVIDER` (`gemini` or `groq`)
-- `GEMINI_API_KEY` (required if Gemini is active)
-- `GEMINI_MODEL` (default: `gemini-2.5-flash`)
-- `GEMINI_TEMPERATURE` (default: `0.2`)
-- `GROQ_API_KEY` (required if Groq is active/fallback)
-- `GROQ_MODEL` (default: `llama-3.3-70b-versatile`)
-- `GROQ_TEMPERATURE` (default: `0.2`)
-- `REQUEST_TIMEOUT_SECONDS` (default: `60`)
-- `LOG_LEVEL` (default: `INFO`)
-
-## Docker Usage
-
-Build image:
-
-```bash
+GEMINI_API_KEY=your_key
+GROQ_API_KEY=your_key
+🐳 Docker
 docker build -t multi-agent-research-assistant .
-```
-
-Run container:
-
-```bash
 docker run --rm -p 8000:8000 --env-file .env multi-agent-research-assistant
-```
-
-## Project Structure
-
-```text
-multi-agent-research-assistant/
-├── agents/
-├── api/
-├── models/
-├── services/
-├── .env.example
-├── .gitignore
-├── Dockerfile
-├── main.py
-└── requirements.txt
-```
-
-## Future Improvements
-
-- Add unit and integration tests for agents and API routes.
-- Add request authentication and rate limiting.
-- Add centralized observability (metrics + tracing).
-- Add persistent storage for historical research runs.
-- Add CI pipeline (lint, tests, build, security scans).
-
+🔮 Future Improvements
+Authentication & rate limiting
+Agent and API test coverage
+Observability with metrics and tracing
+Persistent research history
+CI/CD pipeline

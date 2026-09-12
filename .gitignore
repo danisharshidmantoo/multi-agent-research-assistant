@@ -25,3 +25,4 @@ venv/
 
 # Runtime artifacts
 *.log
+data/chroma/

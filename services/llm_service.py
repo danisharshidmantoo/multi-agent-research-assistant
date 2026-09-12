@@ -1,5 +1,7 @@
 import logging
 
+from langchain_community import tools
+
 from services.config import get_settings
 from services.exceptions import ConfigurationError, GeminiServiceError
 from services.gemini_service import GeminiService
@@ -42,6 +44,36 @@ class LLMService:
                 logger.warning("Provider '%s' failed. Trying next provider.", name)
 
         raise GeminiServiceError("All configured LLM providers failed.") from last_error
+    async def generate_with_tools(
+        self,
+        prompt: str,
+        tools: list,
+        ) -> str:
+        providers = self._provider_order()
+        last_error: Exception | None = None
+
+        for name in providers:
+            svc = self._gemini if name == "gemini" else self._groq
+
+            if svc is None:
+                continue
+
+            try:
+                return await svc.generate_with_tools(
+                    prompt,
+                    tools,
+            )
+            except Exception as exc:
+                last_error = exc
+                logger.warning(
+                    "Provider '%s' failed during tool-enabled generation. "
+                    "Trying next provider.",
+                    name,
+            )
+
+        raise GeminiServiceError(
+        "All configured LLM providers failed during tool-enabled generation."
+    ) from last_error
 
     def _provider_order(self) -> list[str]:
         if self._primary == "groq":

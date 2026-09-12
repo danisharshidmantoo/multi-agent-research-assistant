@@ -1,0 +1,7 @@
+Large language models are neural networks trained on large collections
+of text. They can perform tasks such as text generation, question
+answering, summarization, and translation.
+
+Retrieval augmented generation combines a language model with an
+external retrieval system. The retrieval system searches a collection
+of documents and provides relevant information to the language model.
